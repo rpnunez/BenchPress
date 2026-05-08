@@ -150,14 +150,17 @@ document.addEventListener('DOMContentLoaded', () => {
         tableHtml += `</tbody></table>`;
         resultsTable.innerHTML = tableHtml;
 
+        const totalQueriesSpan = document.getElementById('wpb-total-queries-count');
         if (sampleQueries && sampleQueries.length > 0) {
             let logs = '';
             sampleQueries.forEach(q => {
                 logs += `<span class="log-time">[${q.time_ms}ms]</span> <span class="log-${q.action.toLowerCase()}">${q.action}</span>: <code>${q.query}</code>\n`;
             });
             logsOutput.innerHTML = logs;
+            if (totalQueriesSpan) totalQueriesSpan.textContent = sampleQueries.length;
         } else {
             logsOutput.innerHTML = "<em>No queries logged or DB test skipped.</em>";
+            if (totalQueriesSpan) totalQueriesSpan.textContent = '0';
         }
     }
 

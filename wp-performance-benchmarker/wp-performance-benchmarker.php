@@ -110,32 +110,52 @@ function wpb_run_test_handler() {
         case 'db_stress':
             $iterations = isset($_POST['db_iterations']) ? intval($_POST['db_iterations']) : 500;
             global $wpdb;
+            
+            // Hook into wpdb logging
+            $old_save_queries = $wpdb->save_queries;
+            $wpdb->save_queries = true;
+            $start_index = is_array($wpdb->queries) ? count($wpdb->queries) : 0;
+
             $start = microtime(true);
-            $queries_logged = [];
             
             for ($i = 0; $i < $iterations; $i++) {
                 $key = 'wpb_test_' . rand(1, 99999);
                 $val = "stress_data_" . rand(1, 99999);
                 
-                $q_start = microtime(true);
                 $wpdb->insert($wpdb->options, ['option_name' => $key, 'option_value' => $val, 'autoload' => 'no']);
-                $q_time = microtime(true) - $q_start;
-                if ($i < 10) $queries_logged[] = ["action" => "INSERT", "time_ms" => round($q_time * 1000, 2), "query" => "INSERT INTO options ($key)"];
-
-                $q_start = microtime(true);
                 $wpdb->get_var($wpdb->prepare("SELECT option_value FROM $wpdb->options WHERE option_name = %s", $key));
-                $q_time = microtime(true) - $q_start;
-                if ($i < 10) $queries_logged[] = ["action" => "SELECT", "time_ms" => round($q_time * 1000, 2), "query" => "SELECT FROM options WHERE name=$key"];
-
-                $q_start = microtime(true);
                 $wpdb->delete($wpdb->options, ['option_name' => $key]);
-                $q_time = microtime(true) - $q_start;
-                if ($i < 10) $queries_logged[] = ["action" => "DELETE", "time_ms" => round($q_time * 1000, 2), "query" => "DELETE FROM options WHERE name=$key"];
             }
             
             $result['time_sec'] = round(microtime(true) - $start, 4);
-            $result['total_queries'] = $iterations * 3;
-            $result['sample_queries'] = $queries_logged; // Returns 30 sample statements
+
+            // Extract only the queries executed during this test
+            $all_queries = is_array($wpdb->queries) ? $wpdb->queries : [];
+            $test_queries = array_slice($all_queries, $start_index);
+            
+            $queries_logged = [];
+            foreach ($test_queries as $q) {
+                // $q is [query, time, stack]
+                $sql = $q[0];
+                $time_ms = round($q[1] * 1000, 3);
+                $action = 'QUERY';
+                if (stripos($sql, 'INSERT') === 0) $action = 'INSERT';
+                elseif (stripos($sql, 'SELECT') === 0) $action = 'SELECT';
+                elseif (stripos($sql, 'DELETE') === 0) $action = 'DELETE';
+                elseif (stripos($sql, 'UPDATE') === 0) $action = 'UPDATE';
+
+                $queries_logged[] = [
+                    "action" => $action,
+                    "time_ms" => $time_ms,
+                    "query" => $sql
+                ];
+            }
+
+            // Restore state
+            $wpdb->save_queries = $old_save_queries;
+            
+            $result['total_queries'] = count($queries_logged);
+            $result['sample_queries'] = $queries_logged; 
             break;
 
         case 'cpu_stress':

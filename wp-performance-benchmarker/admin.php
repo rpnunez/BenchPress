@@ -67,7 +67,7 @@
                 <h3>Latest Run Results</h3>
                 <div id="wpb-results-table"></div>
                 
-                <h4 style="margin-top: 20px;">Sample Executed Queries (From DB Test)</h4>
+                <h4 style="margin-top: 20px;">Full Executed Queries Log (Total Queries: <span id="wpb-total-queries-count">0</span>)</h4>
                 <div class="wpb-logs-viewer" id="wpb-logs-output"></div>
             </div>
         </div>
