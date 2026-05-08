@@ -1,0 +1,5 @@
+{
+  "name": "WP Performance Benchmarker",
+  "description": "WordPress plugin to run DB, CPU, network, and memory stress tests, and simulate high traffic. Includes historical charts and dynamic plugin deactivation during tests.",
+  "requestFramePermissions": []
+}
